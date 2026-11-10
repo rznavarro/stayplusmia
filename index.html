@@ -88,7 +88,8 @@ nav.main a:hover{opacity:1;color:var(--brass)}
 .dots span.on{background:var(--brass)}
 
 /* featured */
-.featured{background:var(--paper);color:var(--ink);padding-block:0;overflow:hidden}
+.featured{background:var(--paper);color:var(--ink);padding-block:0;position:relative}
+.featured.h .pin{position:sticky;top:0;height:100svh;min-height:0;overflow:hidden;padding-block:90px 30px}
 .featured .head{display:flex;justify-content:space-between;align-items:flex-end;gap:2rem;flex-wrap:wrap;margin-bottom:2.4rem}
 .featured h2{max-width:14ch}
 .featured .head p{max-width:42ch;color:var(--muted-ink)}
@@ -255,11 +256,10 @@ footer a{text-decoration:none;display:inline-block;padding:10px 4px;margin-right
   <div class="dots" aria-hidden="true"><span class="on"></span><span></span><span></span></div>
 </section>
 
-<section class="featured" aria-labelledby="ft">
+<section class="featured" id="feat" aria-labelledby="ft">
   <div class="pin" id="pin"><div class="wrap head reveal" style="width:100%"><div><p class="eyebrow" data-i18n="ft_eyebrow">Highest-rated rates first</p><h2 id="ft" data-i18n="ft_h">Where to start</h2></div>
     <p data-i18n="ft_p">The six residences with the highest nightly rates in the portfolio. Tap a card to jump to it in the collection.</p></div><div class="ftrack" id="ftrack"></div></div>
-  <div class="fspacer"></div>
-</section>
+  </section>
 
 <section class="catalog" id="residences" aria-labelledby="ch">
   <div class="wrap">
@@ -376,10 +376,10 @@ const T = {
   hero_sub:'Furnished apartments and homes with the soul of the neighborhood and the service of a boutique hotel. Weekend, business trip or a full month.',
   hero_cta:'Message us on WhatsApp',hero_cta2:'Browse the residences',
   meta1:'featured residences',meta2:'lowest nightly rate shown',meta3:'night stays, or monthly',
-  ft_eyebrow:'Highest nightly rates first',ft_h:'Where to start',ft_p:'The six residences with the highest nightly rates in this selection. Each card opens the original listing.',
+  ft_eyebrow:'Highest nightly rates first',ft_h:'Where to start',ft_p:'The six residences with the highest nightly rates in this selection. Tap a card to jump to it in the collection.',
   cat_eyebrow:'The collection',cat_h:'30 residences',cat_p:'Ordered by nightly rate. Message Stayplus about any residence and its name goes straight into the chat.',
   sort_l:'Sort by',sort_desc:'Price: high to low',sort_asc:'Price: low to high',
-  z_eyebrow:'Where we operate',z_h:'Miami, area by area',z_p:'Active properties per city in the Stayplus portfolio. Each row opens the full listing search.',
+  z_eyebrow:'Where we operate',z_h:'Miami, area by area',z_p:'Active properties per city in the Stayplus portfolio.',
   a_eyebrow:'About Stayplus',a_quote:'Redefining the Miami stay. <em>Luxury living that blends the soul of the neighborhood with the standards of a boutique hotel.</em>',
   a_p:'Hospitality, property management, and real estate sales, all under one trusted platform. Homeowners get peace of mind knowing the important details are taken care of, while guests receive an elevated hospitality experience.',
   s1_t:'Short-Term Stays',s1_p:'Fully furnished, professionally designed homes for your weekend getaway or business trip.',
@@ -560,18 +560,23 @@ const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   els.forEach(e=>io.observe(e));
 })();
 
-/* featured: pinned horizontal scroll on desktop, scroll-snap elsewhere */
+/* featured: sticky horizontal scroll driven by GSAP ScrollTrigger on desktop, scroll-snap elsewhere */
 (function(){
-  const track=$('#ftrack'), pin=$('#pin');
-  if(!window.gsap||!window.ScrollTrigger||reduce){track.classList.add('native');pin.style.minHeight='0';pin.style.paddingBlock='clamp(64px,9vw,110px) 0';return;}
+  const feat=$('#feat'), track=$('#ftrack'), pin=$('#pin');
+  const nativeMode=()=>{track.classList.add('native');feat.classList.remove('h');feat.style.height='';pin.style.minHeight='0';pin.style.paddingBlock='clamp(64px,9vw,110px) 0';};
+  if(!window.gsap||!window.ScrollTrigger||reduce){nativeMode();return;}
   gsap.registerPlugin(ScrollTrigger);
   const mm=gsap.matchMedia();
   mm.add('(min-width: 900px)',()=>{
-    track.classList.remove('native');
+    track.classList.remove('native');pin.style.minHeight='';pin.style.paddingBlock='';feat.classList.add('h');
     const dist=()=>Math.max(0,track.scrollWidth-innerWidth);
-    gsap.to(track,{x:()=>-dist(),ease:'none',scrollTrigger:{trigger:pin,pin:true,scrub:.6,start:'top top',end:()=>'+='+dist(),invalidateOnRefresh:true}});
+    const setH=()=>{feat.style.height=(dist()+innerHeight)+'px';};
+    setH();
+    const tw=gsap.to(track,{x:()=>-dist(),ease:'none',scrollTrigger:{trigger:feat,start:'top top',end:'bottom bottom',scrub:.6,invalidateOnRefresh:true,onRefreshInit:setH}});
+    return()=>{tw.scrollTrigger&&tw.scrollTrigger.kill();tw.kill();gsap.set(track,{clearProps:'transform'});feat.classList.remove('h');feat.style.height='';};
   });
-  mm.add('(max-width: 899px)',()=>{track.classList.add('native');pin.style.minHeight='0';pin.style.paddingBlock='clamp(64px,9vw,110px) 0';return()=>{pin.style.minHeight='';pin.style.paddingBlock='';};});
+  mm.add('(max-width: 899px)',()=>{nativeMode();});
+  addEventListener('load',()=>ScrollTrigger.refresh());
 })();
 </script>
 </body>
